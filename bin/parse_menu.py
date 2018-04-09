@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# coding=utf8
+#coding=utf8
 
 import os
 import sys
@@ -22,157 +22,121 @@ from baidu_waimai_parser import BdWmParser
 from eleme_parser import ElemeParser
 from menu_merger import MenuMerger
 
-def jsonDecompress(content):
-    try:
-        return json.loads(zlib.decompress(base64.decodestring(content)))
-    except:
-	traceback.print_exc()
-        return content
-
-def parse_meituan_menu(ori_ss):
+def get_sample_shop_from_sample_file():
     '''
-    parse meituan menu
+    通过采样文件获取同一商家在不同app中的id
+    输入: sys.stdin
+    720e49b2f4c6991ff4b3b6500fd815ba        1        印象柳螺柳州螺蛳粉•匠心制造        waimai
+    meituan_id        cnt brand_name        type
+    输出: sys.stdout
+    meituan_id        cnt brand_name        meituan_id  eleme_id  baidu_id
     '''
-#    ori_ss = jsonDecompress(ss)
-#    if ori_ss == ss:
-#	return
-#    print (type(ori_ss))
-#    return
-    for base_dic in ori_ss:
-	print json.dumps(base_dic, ensure_ascii=False).encode('utf8')
-#	name = base_dic.get('name', '--')
-#	print ('\t'.join(['name', name])).encode('utf8')
-#	spus_ls = base_dic.get('spus', [])
-#	for sp_dic in spus_ls:
-#	    name = sp_dic.get('name', '')
-#	    if name:
-#		print(name.encode('utf8'))
-##	    print ('\t'.join(['\t', 'name', sp_dic.get('name', '--'), str(sp_dic.get('min_price', '--'))])).encode('utf8')
-
-def parse_eleme_menu(ori_ss):
-#    ori_ss = jsonDecompress(ss)
-#    print ('ori_ss type', type(ori_ss))
-    ori_ss = json.loads(ori_ss)
-#    print ('ori_ss type', type(ori_ss))
-    ori_ss = json.loads(ori_ss)
-#    print ('ori_ss type', type(ori_ss))
-    # 进行内容的解析  list
-#    print (len(ori_ss))
-    #print json.dumps(ori_ss[0], ensure_ascii=False).encode('utf8')
-    for base_dic in ori_ss:
-#	print (json.dumps(base_dic, ensure_ascii=False)).encode('utf8')
-#	name = base_dic.get('name', '--')
-##	print ('\t'.join(['name', name])).encode('utf8')
-	foods = base_dic.get('foods', [])
-	for food_dic in foods:
-	    print (food_dic.get('name', '').encode('utf8'))
-#	    specfoods = food_dic.get('specfoods', [])
-#	    for sp_dic in specfoods:
-#	        name = sp_dic.get('name', '')
-#	        if name:
-#		    print(name.encode('utf8'))
-#	    print ('\t'.join(['\t', 'name', sp_dic.get('name', '--'), str(sp_dic.get('price', '--'))])).encode('utf8')
-
-def parse_baidu_menu(ori_ss):
-#    ori_ss = jsonDecompress(ss)
-#    print ('ori_ss type', type(ori_ss))
-    ori_ss = json.loads(ori_ss)
-#    print ('ori_ss type', type(ori_ss))
-    # 进行内容的解析  dict
-    # print (json.dumps(ori_ss, ensure_ascii=False).encode('utf8'))
-    if isinstance(ori_ss, dict):
-	ori_ss = list(ori_ss.values())
-#	sys.stderr.write('{}\n'.format(json.dumps(ori_ss[0], ensure_ascii=False).encode('utf8')))
-#	return
-    for v_dic in ori_ss:
-	print (json.dumps(v_dic, ensure_ascii=False)).encode('utf8')
-#	catalog = v_dic.get('catalog', '--')
-##	print ('\t'.join(['catalog', catalog])).encode('utf8')
-#	data_dic_ls = v_dic.get('data', [])
-#	for data_dic in data_dic_ls:
-#	    name = data_dic.get('name', '')
-#	    if name:
-#		print (name.encode('utf8'))
-##	    print ('\t'.join(['\t', data_dic.get('name', '--'), data_dic.get('current_price', '--')]).encode('utf8'))
-
-def parse_one_menu(ss, tb_name):
-    ori_ss = jsonDecompress(ss)
-    if ori_ss == ss:
-	return None
-    if 'meituan' in tb_name:
-	parse_meituan_menu(ori_ss)
-    elif 'eleme' in tb_name:
-	parse_eleme_menu(ori_ss)
-    elif 'baidu' in tb_name:
-	parse_baidu_menu(ori_ss)
-
-def test_parse_menu():
+    sql = "select * from `std_shop` where id='{}' limit 1"
     mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_waimai')
     conn = mysql_obj['conn']
-    cur = mysql_obj['cursor']
-    tb_name0 = 'meituan_waimai_shop'
-    tb_name1 = 'eleme_shop'
-    tb_name2 = 'baidu_waimai_shop'
-    for tb_name in [tb_name0, tb_name1, tb_name2]:
-        sql = 'select `auto_id`, `menu` from `{}` where `menu` is not null limit 10000'.format(tb_name)
-	cur.execute(sql)
-	for res in cur.fetchall():
-	    if not res:
-		continue
-    #       print (res['auto_id'])
-            ss = res['menu']
-    #       print ('ss', type(ss))
-            parse_one_menu(ss, tb_name)
-
-def test_menu_fusion():
-    sql = "select menu from `{}` where id='{}'"
-    mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_waimai')
+    cursor = mysql_obj['cursor']
+    for line in sys.stdin:
+        ln = line.strip()
+        ls = ln.split('\t')
+        _id, cnt, name, typ = ls
+        cursor.execute(sql.format(_id))
+        dic = cursor.fetchone()
+        if not dic:
+            sys.stderr.write('has no such id: {}\n'.format(_id))
+            continue
+        merge_info_str = dic.get('merge_info', '')
+        if not merge_info_str:
+            sys.stderr.write('has not merge_info, id: {}\n'.format(_id))
+            continue
+        merge_info = json.loads(merge_info_str)
+        m_id = merge_info.get('meituan_waimai', {}).get('out_id', '')
+        e_id = merge_info.get('eleme', {}).get('out_id', '')
+        b_id = merge_info.get('baidu_waimai', {}).get('out_id', '')
+        id_ls = []
+        if m_id: id_ls.append(m_id)
+        if e_id: id_ls.append(e_id)
+        if b_id: id_ls.append(b_id)
+        if len(id_ls) < 2:
+            sys.stderr.write('only has one source, id: {}\n'.format(_id))
+            continue
+        tmp_out_ls = [_id, cnt, name, m_id, e_id, b_id]
+        out_ls = []
+        for ss in tmp_out_ls:
+            if not isinstance(ss, str):
+                ss = ss.encode('utf8')
+            out_ls.append(ss)
+        print ('\t'.join(out_ls))
+    
+ 
+# 通过采样的样本获取菜品特征 用来标注
+def get_unlabeled_data():
+    '''
+    input: sys.stdin
+    output: sys.stdout  \t split  id shop_name food_name mid eid bid
+    '''
+    sql = "select * from `{}` where id='{}'"
+    mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_online')
     conn = mysql_obj['conn']
     cursor = mysql_obj['cursor']
     
     bd_parser = BdWmParser()
     mt_parser = MtWmParser()
     elm_parser = ElemeParser()
-    
-    menu_merger_obj = MenuMerger()
  
     tb_dic = {'eleme':'eleme_shop', 'baidu':'baidu_waimai_shop', 'meituan':'meituan_waimai_shop'}
-    parser_dic = {'eleme':elm_parser, 'baidu':bd_parser, 'meituan':mt_parser}
-    #for line in sys.stdin:
-    for line in open('../data/res.out_json_offline', 'r'):
-	dic = json.loads(line.strip())
-	tup_ls = []
-	for tag, _id in dic.items():
-	    tb_name = tb_dic[tag]
-	    cursor.execute(sql.format(tb_name, _id))
-	    res = cursor.fetchone()
-	    if res:
-		parser = parser_dic[tag]
-		menu = res['menu']
-		ori_ls = parser.parse_one_menu(menu)
-		name_ls = parser.get_all_food(ori_ls)
-		if name_ls:
-		    tup = (tag, name_ls)
-		    tup_ls.append(tup)
-	if len(tup_ls) > 1:
-	    res_ls = menu_merger_obj.merge_menu_lists(tup_ls)
-	    res_dic = {'shop_info':dic, 'food_info':res_ls}
-	    print (json.dumps(res_dic, ensure_ascii=False).encode('utf8'))
-	else:
-	    res_ls = menu_merger_obj.merge_menu_lists(tup_ls)
-	    res_dic = {'shop_info':dic, 'food_info':res_ls}
-	    sys.stderr.write('{}\n'.format(json.dumps(res_dic, ensure_ascii=False).encode('utf8')))
+    tb_ls = ['meituan_waimai_shop', 'eleme_shop', 'baidu_waimai_shop']
+    parser_ls = [mt_parser, elm_parser, bd_parser]
+    id_set = set()
+    for line in sys.stdin:
+        ls = line.strip().split('\t')
+        try:
+            _id, cnt, name, typ, city, m_id, e_id, b_id = ls
+        except:
+            continue
+        if _id in id_set:
+            continue
+        id_set.add(_id)
+        for a_id, tb, parser in zip([m_id, e_id, b_id], tb_ls, parser_ls):
+            if not a_id:
+                continue
+            sql_i = sql.format(tb, a_id)
+            cursor.execute(sql_i)
+            dic = cursor.fetchone()
+            food_ls = parser.get_all_food_from_menu(dic.get('menu', ''))
+            for food in food_ls:
+                str_ls = [_id, name, typ, city, food.encode('utf8'), a_id, tb]
+                #str_ls = [ss.encode('utf8') for ss in str_ls]
+                print ('\t'.join(str_ls))
+        print ('')
+        if len(id_set) >=50:
+            break
+        
 
 def parse_specific_menu():
-    sql = "select menu from `{}` where id='{}'"
-    mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_waimai')
+    bd_parser = BdWmParser()
+    mt_parser = MtWmParser()
+    elm_parser = ElemeParser()
+    src_tb_dic = {'baidu':'baidu_waimai_shop', 'meituan':'meituan_waimai_shop', 'eleme':'eleme_shop'}
+    tb_parser_dic = {'baidu_waimai_shop':bd_parser, 'meituan_waimai_shop':mt_parser, 'eleme_shop':elm_parser}
+    
+    mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_online')
     conn = mysql_obj['conn']
     cursor = mysql_obj['cursor']
-    sql = sql.format('eleme_shop', '66ab7e967c1de91a5f557cbb50d28958')
-    cursor.execute(sql)
-    dic = cursor.fetchone()
-    menu = dic['menu']
-    parse_one_menu(menu, 'eleme_shop')
+
+    for line in sys.stdin:
+        ln = line.strip()
+        dic = json.loads(ln)
+        for src, _id in dic.items():
+            src_tb = src_tb_dic[src]
+            parser = tb_parser_dic[src_tb]
+            sql = "select menu from `{}` where id='{}' limit 1"
+            sql = sql.format(src_tb, _id) 
+            cursor.execute(sql)
+	    dic = cursor.fetchone()
+            menu = dic.get('menu', '')
+            menu_ls = parser.parse_one_menu(menu)
+            print (json.dumps(menu_ls, ensure_ascii=False).encode('utf8'))
+        sys.exit()
 
 def get_chaos_menu():
     sql = "select menu from `{}` where id='{}'"
@@ -191,38 +155,40 @@ def get_chaos_menu():
     ss = u'ð §§鸭腿'
     num = 0
     for line in open('../data/res.out_json_offline', 'r'):
-	num += 1
-	if num % 2000 == 0:
-	    print (num)
-	dic = json.loads(line.strip())
-	tup_ls = []
-	for tag, _id in dic.items():
-	    tb_name = tb_dic[tag]
-	    cursor.execute(sql.format(tb_name, _id))
-	    res = cursor.fetchone()
-	    if res:
-		parser = parser_dic[tag]
-		menu = res['menu']
-		ori_ls = parser.parse_one_menu(menu)
-		name_ls = parser.get_all_food(ori_ls)
-		name_ls = set(name_ls)
-		if ss in name_ls:
-		    print (tag, _id)
-		    sys.exit()
-#		if name_ls:
-#		    tup = (tag, name_ls)
-#		    tup_ls.append(tup)
-#	if len(tup_ls) > 1:
-#	    res_ls = menu_merger_obj.merge_menu_lists(tup_ls)
-#	    res_dic = {'shop_info':dic, 'food_info':res_ls}
-#	    print (json.dumps(res_dic, ensure_ascii=False).encode('utf8'))
-#	else:
-#	    res_ls = menu_merger_obj.merge_menu_lists(tup_ls)
-#	    res_dic = {'shop_info':dic, 'food_info':res_ls}
-#	    sys.stderr.write('{}\n'.format(json.dumps(res_dic, ensure_ascii=False).encode('utf8')))
+        num += 1
+        if num % 2000 == 0:
+            print (num)
+        dic = json.loads(line.strip())
+        tup_ls = []
+        for tag, _id in dic.items():
+            tb_name = tb_dic[tag]
+            cursor.execute(sql.format(tb_name, _id))
+            res = cursor.fetchone()
+            if res:
+                parser = parser_dic[tag]
+                menu = res['menu']
+                ori_ls = parser.parse_one_menu(menu)
+                name_ls = parser.get_all_food(ori_ls)
+                name_ls = set(name_ls)
+                if ss in name_ls:
+                    print (tag, _id)
+                    sys.exit()
+#                if name_ls:
+#                    tup = (tag, name_ls)
+#                    tup_ls.append(tup)
+#        if len(tup_ls) > 1:
+#            res_ls = menu_merger_obj.merge_menu_lists(tup_ls)
+#            res_dic = {'shop_info':dic, 'food_info':res_ls}
+#            print (json.dumps(res_dic, ensure_ascii=False).encode('utf8'))
+#        else:
+#            res_ls = menu_merger_obj.merge_menu_lists(tup_ls)
+#            res_dic = {'shop_info':dic, 'food_info':res_ls}
+#            sys.stderr.write('{}\n'.format(json.dumps(res_dic, ensure_ascii=False).encode('utf8')))
 
 
 if __name__ == '__main__':
+    #get_sample_shop_from_sample_file()
+    #get_unlabeled_data()
     #get_chaos_menu()
-    #parse_specific_menu()
-    test_menu_fusion()
+    parse_specific_menu()
+    #test_menu_fusion()

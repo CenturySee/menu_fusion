@@ -41,6 +41,8 @@ class StringNormalizer():
 	ss3 = self.char_filter.sub(r' ', ss2)
 	# 多个空格合并
 	ss4 = ' '.join(ss3.strip().split())
+	if not isinstance(ss4, str):
+	    ss4 = ss4.encode('utf8')
 	return ss4
 #	# 归一化空格
 #	ss = ''.join(ss.strip().split())

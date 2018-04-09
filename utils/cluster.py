@@ -21,7 +21,7 @@ class SimpleCluster():
 	class_dic = {}
 	max_class_ind = 0
 	for ii, feat_tup in enumerate(feature_ls):
-	     src, _id, brand_name, food, n_food = feat_tup
+	     n_food = feat_tup[-1]
 	     if n_food in class_dic:
 		 label_ls.append(class_dic[n_food])
 	     else:

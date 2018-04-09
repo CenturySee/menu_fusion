@@ -1,7 +1,9 @@
 #!/usr/bin/python
 #encoding=utf8
+import sys
 from collections import defaultdict
 
+sys.path.append('../utils/')
 from directory_info import *
 from str_normalizer import StringNormalizer
 
@@ -37,7 +39,7 @@ def test_menu_merge():
     tup_ls = [(t0, ls0), (t1, ls1)]
     menu_merger_obj = MenuMerger()
     res_dic = menu_merger_obj.merge_menu_lists(tup_ls[:1])
-    print (json.dumps(res_dic, ensure_ascii=False).encode('utf8'))
+    print (json.dumps(res_dic, ensure_ascii=False))
 
 if __name__ == '__main__':
     test_menu_merge()
