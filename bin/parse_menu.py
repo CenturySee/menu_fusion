@@ -26,16 +26,24 @@ def get_sample_shop_from_sample_file():
     '''
     通过采样文件获取同一商家在不同app中的id
     输入: sys.stdin
+<<<<<<< HEAD
     720e49b2f4c6991ff4b3b6500fd815ba        1        印象柳螺柳州螺蛳粉•匠心制造        waimai
     meituan_id        cnt brand_name        type
     输出: sys.stdout
     meituan_id        cnt brand_name        meituan_id  eleme_id  baidu_id
+=======
+    720e49b2f4c6991ff4b3b6500fd815ba	1	印象柳螺柳州螺蛳粉•匠心制造	waimai
+    meituan_id	cnt brand_name	type
+    输出: sys.stdout
+    meituan_id	cnt brand_name	meituan_id  eleme_id  baidu_id
+>>>>>>> 4cca5f0e4264c66366b590f7a182ce39f800a3b1
     '''
     sql = "select * from `std_shop` where id='{}' limit 1"
     mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_waimai')
     conn = mysql_obj['conn']
     cursor = mysql_obj['cursor']
     for line in sys.stdin:
+<<<<<<< HEAD
         ln = line.strip()
         ls = ln.split('\t')
         _id, cnt, name, typ = ls
@@ -66,6 +74,38 @@ def get_sample_shop_from_sample_file():
                 ss = ss.encode('utf8')
             out_ls.append(ss)
         print ('\t'.join(out_ls))
+=======
+	ln = line.strip()
+	ls = ln.split('\t')
+	_id, cnt, name, typ = ls
+	cursor.execute(sql.format(_id))
+	dic = cursor.fetchone()
+	if not dic:
+	    sys.stderr.write('has no such id: {}\n'.format(_id))
+	    continue
+	merge_info_str = dic.get('merge_info', '')
+	if not merge_info_str:
+	    sys.stderr.write('has not merge_info, id: {}\n'.format(_id))
+	    continue
+	merge_info = json.loads(merge_info_str)
+	m_id = merge_info.get('meituan_waimai', {}).get('out_id', '')
+	e_id = merge_info.get('eleme', {}).get('out_id', '')
+	b_id = merge_info.get('baidu_waimai', {}).get('out_id', '')
+	id_ls = []
+	if m_id: id_ls.append(m_id)
+	if e_id: id_ls.append(e_id)
+	if b_id: id_ls.append(b_id)
+	if len(id_ls) < 2:
+	    sys.stderr.write('only has one source, id: {}\n'.format(_id))
+	    continue
+	tmp_out_ls = [_id, cnt, name, m_id, e_id, b_id]
+	out_ls = []
+	for ss in tmp_out_ls:
+	    if not isinstance(ss, str):
+		ss = ss.encode('utf8')
+	    out_ls.append(ss)
+	print ('\t'.join(out_ls))
+>>>>>>> 4cca5f0e4264c66366b590f7a182ce39f800a3b1
     
  
 # 通过采样的样本获取菜品特征 用来标注

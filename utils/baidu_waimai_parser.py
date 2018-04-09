@@ -29,6 +29,16 @@ class BdWmParser():
                 catalog_set.add(catalog)
         return list(catalog)
 
+    def get_all_catalog(self, ori_ss):
+	catalog_set = set()
+	if not ori_ss:
+	    return []
+	for base_dic in ori_ss:
+	    catalog = base_dic.get('catalog', '')
+	    if catalog:
+		catalog_set.add(catalog)
+	return list(catalog)
+
     def get_all_food(self, ori_ss):
         name_set = set()
         if not ori_ss:
@@ -73,7 +83,6 @@ class BdWmParser():
         dic_ls = self.parse_one_menu(ori_ss)
         catalog_ls = self.get_all_catalog(dic_ls)
         return catalog_ls
-
 
 def test_bdwm_parse():
     mysql_obj = get_mysql_obj(os.sep.join([conf_dir, 'db.conf']), 'mysql_waimai')

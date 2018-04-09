@@ -10,10 +10,13 @@ import sys
 import json
 import math
 import time
+import heapq
+import random
 import logging
 import operator
 import traceback
 from collections import defaultdict
+#from bson import json_util
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = cur_dir # os.path.sep.join([cur_dir, '..', '..'])
@@ -21,7 +24,7 @@ base_dir = cur_dir # os.path.sep.join([cur_dir, '..', '..'])
 utils_dir = os.path.sep.join([base_dir, 'utils'])
 sys.path.append(utils_dir)
 
-LTP_DATA_DIR = '/home/xuzhenqi/menu_fusion/ltp_model'
+LTP_DATA_DIR = os.sep.join([base_dir, 'ltp_data'])
 cws_model_path = os.path.join(LTP_DATA_DIR, 'cws.model')  # 分词模型路径，模型名称为`cws.model`
 pos_model_path = os.path.join(LTP_DATA_DIR, 'pos.model')  # 词性标注模型路径，模型名称为`pos.model`
 ner_model_path = os.path.join(LTP_DATA_DIR, 'ner.model')  # 命名实体识别模型路径，模型名称为`pos.model`

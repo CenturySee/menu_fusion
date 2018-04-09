@@ -5,8 +5,8 @@ import os, re, sys, json
 from hanziconv import HanziConv
 
 class StringNormalizer():
-    def __init__(self):
-	self.spec_dic = { \
+	def __init__(self):
+		self.spec_dic = { \
 		u'＋':u'+', u'&':u'+', u'➕':u'+', u'十':u'+', \
 		u'【':u'[', u'◥':u'[', u'】':u']', u'◤':u']', \
 		u'”':u'"', u'“':u'"', u"'":u'"', \
@@ -53,10 +53,10 @@ class StringNormalizer():
 #	# 归一化特殊字符: / [ ]
 #	new_ss = ''
 #	for s in ss:
-#	    new_ss += self.spec_dic.get(s, s)
+#		new_ss += self.spec_dic.get(s, s)
 #	return new_ss
 
 if __name__ == '__main__':
-    str_norm_obj = StringNormalizer()
-    ss = u'i【  ◥  ＋  &  ➕ 十...  。❤  ! .  '
-    print str_norm_obj.normalize(ss)
+	str_norm_obj = StringNormalizer()
+	ss = u'i【  ◥  ＋  &  ➕ 十...  。❤  ! .  '
+	print str_norm_obj.normalize(ss)
