@@ -297,10 +297,12 @@ def test_filter_chars():
 if __name__ == '__main__':
     sn_norm_obj = ShopNameNormalizer()
     sn_norm_obj.init_all()
+    res_dic = sn_norm_obj.parse_brand_and_branch(u'太平洋咖啡（凯德广场·新南店）')
+    print (json.dumps(res_dic, ensure_ascii=False).encode('utf8'))
     #sn_norm_obj.parse_branch_from_file('meb_shop_name_no_dup.txt')
     #sn_norm_obj.parse_brand_from_file('meb_shop_name_no_dup.txt')
     #sn_norm_obj.parse_brand_and_branch_from_file('meb_sample.txt')
-    sn_norm_obj.parse_brand_and_branch_from_file('meb_shop_name_no_dup.txt')
+    #sn_norm_obj.parse_brand_and_branch_from_file('meb_shop_name_no_dup.txt')
     #sn_norm_obj.parse_brand_and_branch_from_file('tt')
     #filter_cand_remain()
     #get_all_cand_branch_with_spec_suffix()
