@@ -41,6 +41,35 @@ class FeatureGenerator():
 	    res_ls.append([src, _id, brand_name, food, norm_food])
 	return res_ls
 
+    def generate_feature_with_food_dic(self, sql_dic, src):
+	'''
+	特征生成
+	input: sql_dic  从mysql中取出的一条记录
+	output: feature_ls  该记录中菜品对应的特征 
+	        [[src, id, food_dic, brand, norm_food], [...]]
+		src:来源    id:店ID    food_dic:菜品详细描述    food:菜品名称    norm_food:归一化菜品名
+	'''
+	_id = sql_dic.get('id', '')
+	brand_name = sql_dic.get('s_brand_name', '')
+	menu = sql_dic.get('menu', '')
+	parser = None
+	if 'eleme' in src:
+	    parser = self.elem_parser
+	elif 'meituan' in src:
+	    parser = self.meituan_parser
+	elif 'baidu' in src:
+	    parser = self.baidu_parser
+	food_ls = []
+	name_food_dic = {}
+	if parser:
+	    name_food_dic = parser.get_all_food_dict_from_menu(menu)
+	res_ls = []
+	for food, food_dic in name_food_dic.items():
+	    norm_food = self.normalizer.normalize(food)
+	    res_ls.append([src, _id, food_dic, food, norm_food])
+	return res_ls
+
+
 def test_feature_generator():
     feat_gen = FeatureGenerator()
 

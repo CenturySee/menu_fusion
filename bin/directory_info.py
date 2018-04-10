@@ -8,7 +8,18 @@ import zlib
 import base64
 import traceback
 
-from WebSpider.util import jsonCompress, jsonDecompress
+from collections import OrderedDict
+
+#from WebSpider.util import jsonCompress, jsonDecompress
+
+def jsonCompress(content):
+    return base64.encodestring(zlib.compress(json.dumps(content)))
+
+def jsonDecompress(content):
+    try:
+        return json.loads(zlib.decompress(base64.decodestring(content)))
+    except:
+        return content
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 proj_dir = os.sep.join([cur_dir, '..'])

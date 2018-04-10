@@ -61,46 +61,5 @@ def test_parse_one_sentence(sentence):
 	res_dic = parse_one_sentence(sentence)
 	print json.dumps(res_dic, ensure_ascii=False)
 
-def sample_cut_result():
-	ls_ls = []
-	for line in open('meb.cut', 'r'):
-		ln = line.strip().decode('utf8')
-		dic = json.loads(ln)
-		word_ls = dic['words']
-		ls_ls.append(word_ls)
-	out_ls = random.sample(ls_ls, 500)
-	for words in out_ls:
-		print (' '.join(words).encode('utf8'))
-
-def get_all_number_suffix():
-	suffix_dic = defaultdict(int)
-	prefix_dic = defaultdict(int)
-	for line in open('meb.ltp_cut', 'r'):
-		ln = line.strip().decode('utf8')
-		dic = json.loads(ln)
-		words = dic['words']
-		postags = dic['postags']
-		length = len(postags)
-		for ii, postag in enumerate(postags):
-			if postag == 'm':
-				if ii - 1 > 0:
-					word = words[ii-1]
-					prefix_dic[word] += 1
-				if ii + 1 < length:
-					word = words[ii+1]
-					suffix_dic[word] += 1
-	top_num = 50
-	func = lambda x: x[1]
-	suffix_tup_ls = heapq.nlargest(top_num, suffix_dic.iteritems(), func)
-	print ('suffix:')
-	for tup in suffix_tup_ls:
-		print (json.dumps(tup, ensure_ascii=False))
-	print ('prefix:')
-	prefix_tup_ls = heapq.nlargest(top_num, prefix_dic.iteritems(), func)
-	for tup in prefix_tup_ls:
-		print (json.dumps(tup, ensure_ascii=False))
-
 if __name__ == '__main__':
-	get_all_number_suffix()
-	#sample_cut_result()
-	#parse_all_sentence()
+	parse_all_sentence()
