@@ -16,7 +16,7 @@ class ShopNameNormalizer():
         self.bracket_pat = re.compile(u'\((.*?)\)')
         self.branch_dict = {}   # 分支机构名称
         self.brand_dict = {}    # 店名名称
-        self.suffix = re.compile(u"分店|店|站|路|街$")
+        self.suffix = re.compile(u"(分店|店|站|路|街)$")
         self.__init = False
         pass
 
@@ -34,8 +34,8 @@ class ShopNameNormalizer():
 
     def init_all(self, brand_fn='brand.res', branch_fn='branch.res'):
         if not self.__init:
-            self.load_branch_name(brand_fn)
-            self.load_brand_name(branch_fn)
+            self.load_branch_name(branch_fn)
+            self.load_brand_name(brand_fn)
             self.__init = True
 
     def split_shop_name(self, ss):
@@ -54,6 +54,8 @@ class ShopNameNormalizer():
         ss = ss.strip().replace(u'（', '(').replace(u'）',')')
         ss = re.sub('\(+', '(', ss)
         ss = re.sub('\)+', ')', ss)
+        # 去除空格
+        ss = ''.join(ss.split())
         # 可能需要验证是否有其他特殊符号存在(20180403)
         bracket_res_ls = re.findall(self.bracket_pat, ss)
         res_str = ss
@@ -76,10 +78,12 @@ class ShopNameNormalizer():
         remain_ls = list(set(remain_ls))
         bracket_length = len(bracket_ls)
         brand = None
-        if bracket_length == 1:
-            branch = self.__parse_branch(bracket_ls)
-            if branch:
-                if len(remain_ls) == 1:
+        if len(remain_ls) == 1:
+            if remain_ls[0] in self.brand_dict:
+                brand = self.brand_dict[remain_ls[0]]
+            elif bracket_length == 1:
+                branch = self.__parse_branch(bracket_ls, remain_ls)
+                if branch:
                     brand = remain_ls[0]
         return brand
 
@@ -89,6 +93,8 @@ class ShopNameNormalizer():
         :param shop_name: string 原始店铺名称
         :return: brand: string 品牌名称
         '''
+        if not self.__init:
+            self.init_all()
         brand = None
         if shop_name:
             split_dic = self.split_shop_name(shop_name)
@@ -127,20 +133,21 @@ class ShopNameNormalizer():
         else:
             return None
 
-    def __parse_branch(self, bracket_ls):
+    def __parse_branch(self, bracket_ls, remain_ls):
         '''
         解析疑似分支机构名称
         :param bracket_ls: 括号内内容列表
+        :param remain_ls: 剩余的内容
         :return: 结构化的分支结构名称
         '''
         branch = None
         bracket_ls = list(set(bracket_ls))
-        if len(bracket_ls) == 1:
-            branch = bracket_ls[0]
-            if branch in self.branch_dict:
-                branch = self.branch_dict[branch]
+        remain_ls = list(set(remain_ls))
+        if len(bracket_ls) == 1 and len(remain_ls) == 1:
+            if bracket_ls[0] in self.branch_dict:
+                branch = self.branch_dict[bracket_ls[0]]
             else:
-                branch = self.get_cand_branch_with_specific_suffix(branch)
+                branch = self.get_cand_branch_with_specific_suffix(bracket_ls[0])
         return branch
 
     def parse_branch(self, shop_name):
@@ -149,13 +156,15 @@ class ShopNameNormalizer():
         :param shop_name: string 原始店铺名称
         :return: branch: string 分支名称
         '''
+        if not self.__init:
+            self.init_all()
         branch = None
         if shop_name:
             split_dic = self.split_shop_name(shop_name)
             bracket_ls, remain_ls = split_dic['bracket'], split_dic['remain']
-            branch = self.__parse_branch(bracket_ls)
+            branch = self.__parse_branch(bracket_ls, remain_ls)
             if not branch:
-                branch = self.__parse_branch(remain_ls)
+                branch = self.__parse_branch(remain_ls, bracket_ls)
         return branch
 
     def parse_branch_from_file(self, shop_fn):
@@ -187,13 +196,14 @@ class ShopNameNormalizer():
         branch_name = None
         brand_name = None
         if bracket_length == 1:
-            norm_res = self.__parse_branch(bracket_ls)
+            norm_res = self.__parse_branch(bracket_ls, remain_ls)
+            #print 'norm_res', norm_res
             if norm_res:
                 branch_name = norm_res
                 brand_name = '##'.join(remain_ls)
             else:
                 if len(remain_ls) == 1 and remain_ls[0] in self.brand_dict:
-                    shop_name = self.brand_dict[remain_ls[0]]
+                    brand_name = self.brand_dict[remain_ls[0]]
                     if len(bracket_ls) == 1:
                         branch_name = bracket_ls[0]
         res_dic = {'branch':branch_name, 'brand':brand_name}
@@ -286,10 +296,12 @@ def test_filter_chars():
 
 if __name__ == '__main__':
     sn_norm_obj = ShopNameNormalizer()
+    sn_norm_obj.init_all()
     #sn_norm_obj.parse_branch_from_file('meb_shop_name_no_dup.txt')
     #sn_norm_obj.parse_brand_from_file('meb_shop_name_no_dup.txt')
+    #sn_norm_obj.parse_brand_and_branch_from_file('meb_sample.txt')
     sn_norm_obj.parse_brand_and_branch_from_file('meb_shop_name_no_dup.txt')
-    #sn_norm_obj.parse_shop_name_from_file('meb_shop_name_no_dup.txt')
+    #sn_norm_obj.parse_brand_and_branch_from_file('tt')
     #filter_cand_remain()
     #get_all_cand_branch_with_spec_suffix()
     #get_all_filtered_chars()
